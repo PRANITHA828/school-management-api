@@ -2,7 +2,7 @@ const express = require("express");
 const app = express();
 require("./configs/db");
 
-const PORT = process.env.MYSQLPORT || 5000;
+const PORT = process.env.PORT || 5000;
 
 const schoolRoutes = require("./routes/schoolroutes");
 
