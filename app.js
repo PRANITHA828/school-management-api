@@ -9,14 +9,9 @@ const schoolRoutes = require("./routes/schoolroutes");
 app.use(express.json());
 app.use("/", schoolRoutes);
 
-app.get("/", (req, res) => {
-  res.send("Server is live ");
-});
+
 
 app.listen(PORT,"0.0.0.0", () => {
   console.log(`Server running on port ${PORT}`);
 });
 
-app.get("/test", (req, res) => {
-  res.send("API working ");
-});

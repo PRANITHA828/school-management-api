@@ -50,34 +50,30 @@ const listSchools = (req, res) => {
   });
 };
 
-const addSchool = async (req, res) => {
-  try {
-    console.log("API HIT");
+const addSchool = (req, res) => {
+  const { name, address, latitude, longitude } = req.body;
 
-    const { name, address, latitude, longitude } = req.body;
+  if (!name || !address || latitude == null || longitude == null) {
+    return res.status(400).json({ message: "All fields are required" });
+  }
 
-    if (!name || !address || latitude == null || longitude == null) {
-      return res.status(400).json({ message: "All fields are required" });
+  if (isNaN(latitude) || isNaN(longitude)) {
+    return res.status(400).json({ message: "Invalid coordinates" });
+  }
+
+  const query =
+    "INSERT INTO schools (name, address, latitude, longitude) VALUES (?, ?, ?, ?)";
+
+  db.query(query, [name, address, latitude, longitude], (err, result) => {
+    if (err) {
+      return res.status(500).json({ error: err });
     }
 
-    const query =
-      "INSERT INTO schools (name, address, latitude, longitude) VALUES (?, ?, ?, ?)";
-
-    const [result] = await db.query(query, [
-      name,
-      address,
-      latitude,
-      longitude,
-    ]);
-
-    return res.json({
-      message: "School added successfully ",
+    res.status(201).json({
+      message: "School added successfully",
       id: result.insertId,
     });
-  } catch (err) {
-    console.log("ERROR ", err);
-    return res.status(500).json({ error: err.message });
-  }
+  });
 };
 
 //  Update School
