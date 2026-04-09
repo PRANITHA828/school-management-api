@@ -1,6 +1,28 @@
 const db = require("../configs/db");
 const getDistance = require("../utils/distance");
 
+const db = require("../database");
+
+const addScoo = (req, res) => {
+  const { name, address, latitude, longitude } = req.body;
+
+  const query = `
+    INSERT INTO schools (name, address, latitude, longitude)
+    VALUES (?, ?, ?, ?)
+  `;
+
+  db.run(query, [name, address, latitude, longitude], function (err) {
+    if (err) {
+      return res.status(500).json({ error: err.message });
+    }
+
+    res.json({
+      message: "School added successfully",
+      id: this.lastID,
+    });
+  });
+};
+
 const listSchools = (req, res) => {
   const { latitude, longitude } = req.query;
 
@@ -110,11 +132,7 @@ const updateSchool = (req, res) => {
   );
 };
 
-const addScoo = (req, res) => {
-  return res.json({
-    message: "API working ✅",
-  });
-};
+
 
 module.exports = { addSchool, listSchools, updateSchool, addScoo };
 
