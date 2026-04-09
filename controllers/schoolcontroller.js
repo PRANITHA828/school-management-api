@@ -2,62 +2,63 @@ const db = require("../database");
 const getDistance = require("../utils/distance");
 
 
-// ADD SCHOOL
+//  ADD SCHOOL
 const addSchool = (req, res) => {
-  const { name, address, latitude, longitude } = req.body;
+  try {
+    const { name, address, latitude, longitude } = req.body;
 
-  // Validation
-  if (!name || !address || latitude == null || longitude == null) {
-    return res.status(400).json({ message: "All fields are required" });
-  }
-
-  if (isNaN(latitude) || isNaN(longitude)) {
-    return res.status(400).json({ message: "Invalid coordinates" });
-  }
-
-  const query = `
-    INSERT INTO schools (name, address, latitude, longitude)
-    VALUES (?, ?, ?, ?)
-  `;
-
-  db.run(query, [name, address, latitude, longitude], function (err) {
-    if (err) {
-      console.error("DB ERROR:", err);
-      return res.status(500).json({ error: err.message });
+    // Validation
+    if (!name || !address || latitude == null || longitude == null) {
+      return res.status(400).json({ message: "All fields are required" });
     }
+
+    const lat = parseFloat(latitude);
+    const lon = parseFloat(longitude);
+
+    if (isNaN(lat) || isNaN(lon)) {
+      return res.status(400).json({ message: "Invalid coordinates" });
+    }
+
+    const stmt = db.prepare(`
+      INSERT INTO schools (name, address, latitude, longitude)
+      VALUES (?, ?, ?, ?)
+    `);
+
+    const result = stmt.run(name, address, lat, lon);
 
     return res.status(201).json({
       message: "School added successfully",
-      id: this.lastID,
+      id: result.lastInsertRowid,
     });
-  });
+  } catch (error) {
+    console.error("ADD ERROR:", error);
+    return res.status(500).json({ error: "Internal Server Error" });
+  }
 };
+
 
 
 //  LIST SCHOOLS (SORT BY DISTANCE)
 const listSchools = (req, res) => {
-  const { latitude, longitude } = req.query;
+  try {
+    const { latitude, longitude } = req.query;
 
-  if (!latitude || !longitude) {
-    return res.status(400).json({
-      message: "Latitude and Longitude are required",
-    });
-  }
-
-  const userLat = parseFloat(latitude);
-  const userLon = parseFloat(longitude);
-
-  if (isNaN(userLat) || isNaN(userLon)) {
-    return res.status(400).json({
-      message: "Invalid coordinates",
-    });
-  }
-
-  db.all("SELECT * FROM schools", [], (err, rows) => {
-    if (err) {
-      console.error("DB ERROR:", err);
-      return res.status(500).json({ error: err.message });
+    if (!latitude || !longitude) {
+      return res.status(400).json({
+        message: "Latitude and Longitude are required",
+      });
     }
+
+    const userLat = parseFloat(latitude);
+    const userLon = parseFloat(longitude);
+
+    if (isNaN(userLat) || isNaN(userLon)) {
+      return res.status(400).json({
+        message: "Invalid coordinates",
+      });
+    }
+
+    const rows = db.prepare("SELECT * FROM schools").all();
 
     const schoolsWithDistance = rows.map((school) => {
       const distance = getDistance(
@@ -69,16 +70,21 @@ const listSchools = (req, res) => {
 
       return {
         ...school,
-        distance: parseFloat(distance.toFixed(2)),
+        distance: Number(distance.toFixed(2)),
       };
     });
 
-    // Sort by nearest
+    // Sort nearest first
     schoolsWithDistance.sort((a, b) => a.distance - b.distance);
 
     return res.json(schoolsWithDistance);
-  });
+  } catch (error) {
+    console.error("LIST ERROR:", error);
+    return res.status(500).json({ error: "Internal Server Error" });
+  }
 };
+
+
 
 
 
