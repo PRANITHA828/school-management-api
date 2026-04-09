@@ -1,10 +1,19 @@
-const db = require("../configs/db");
+const db = require("../database");
 const getDistance = require("../utils/distance");
 
-const db = require("../database");
 
-const addScoo = (req, res) => {
+// ADD SCHOOL
+const addSchool = (req, res) => {
   const { name, address, latitude, longitude } = req.body;
+
+  // Validation
+  if (!name || !address || latitude == null || longitude == null) {
+    return res.status(400).json({ message: "All fields are required" });
+  }
+
+  if (isNaN(latitude) || isNaN(longitude)) {
+    return res.status(400).json({ message: "Invalid coordinates" });
+  }
 
   const query = `
     INSERT INTO schools (name, address, latitude, longitude)
@@ -13,20 +22,22 @@ const addScoo = (req, res) => {
 
   db.run(query, [name, address, latitude, longitude], function (err) {
     if (err) {
+      console.error("DB ERROR:", err);
       return res.status(500).json({ error: err.message });
     }
 
-    res.json({
+    return res.status(201).json({
       message: "School added successfully",
       id: this.lastID,
     });
   });
 };
 
+
+//  LIST SCHOOLS (SORT BY DISTANCE)
 const listSchools = (req, res) => {
   const { latitude, longitude } = req.query;
 
-  
   if (!latitude || !longitude) {
     return res.status(400).json({
       message: "Latitude and Longitude are required",
@@ -42,16 +53,13 @@ const listSchools = (req, res) => {
     });
   }
 
-  //  Fetch all schools
-  const query = "SELECT * FROM schools";
-
-  db.query(query, (err, results) => {
+  db.all("SELECT * FROM schools", [], (err, rows) => {
     if (err) {
-      return res.status(500).json({ error: err });
+      console.error("DB ERROR:", err);
+      return res.status(500).json({ error: err.message });
     }
 
-    // Add distance to each school
-    const schoolsWithDistance = results.map((school) => {
+    const schoolsWithDistance = rows.map((school) => {
       const distance = getDistance(
         userLat,
         userLon,
@@ -61,49 +69,27 @@ const listSchools = (req, res) => {
 
       return {
         ...school,
-        distance: parseFloat(distance.toFixed(2)), // rounded
+        distance: parseFloat(distance.toFixed(2)),
       };
     });
 
-    // Sort by nearest first
+    // Sort by nearest
     schoolsWithDistance.sort((a, b) => a.distance - b.distance);
 
-    res.json(schoolsWithDistance);
+    return res.json(schoolsWithDistance);
   });
 };
 
-const addSchool = (req, res) => {
-  const { name, address, latitude, longitude } = req.body;
 
-  if (!name || !address || latitude == null || longitude == null) {
-    return res.status(400).json({ message: "All fields are required" });
-  }
-
-  if (isNaN(latitude) || isNaN(longitude)) {
-    return res.status(400).json({ message: "Invalid coordinates" });
-  }
-
-  const query =
-    "INSERT INTO schools (name, address, latitude, longitude) VALUES (?, ?, ?, ?)";
-
-  db.query(query, [name, address, latitude, longitude], (err, result) => {
-    if (err) {
-      return res.status(500).json({ error: err });
-    }
-
-    res.status(201).json({
-      message: "School added successfully",
-      id: result.insertId,
-    });
-  });
-};
-
-//  Update School
+// UPDATE SCHOOL
 const updateSchool = (req, res) => {
   const { id } = req.params;
   const { name, address, latitude, longitude } = req.body;
 
-  // Validation
+  if (!id) {
+    return res.status(400).json({ message: "ID is required" });
+  }
+
   if (!name || !address || latitude == null || longitude == null) {
     return res.status(400).json({ message: "All fields are required" });
   }
@@ -112,27 +98,35 @@ const updateSchool = (req, res) => {
     return res.status(400).json({ message: "Invalid coordinates" });
   }
 
-  const query =
-    "UPDATE schools SET name=?, address=?, latitude=?, longitude=? WHERE id=?";
+  const query = `
+    UPDATE schools 
+    SET name=?, address=?, latitude=?, longitude=? 
+    WHERE id=?
+  `;
 
-  db.query(
+  db.run(
     query,
     [name, address, latitude, longitude, id],
-    (err, result) => {
+    function (err) {
       if (err) {
-        return res.status(500).json({ error: err });
+        console.error("DB ERROR:", err);
+        return res.status(500).json({ error: err.message });
       }
 
-      if (result.affectedRows === 0) {
+      if (this.changes === 0) {
         return res.status(404).json({ message: "School not found" });
       }
 
-      res.json({ message: "School updated successfully " });
+      return res.json({
+        message: "School updated successfully",
+      });
     }
   );
 };
 
 
-
-module.exports = { addSchool, listSchools, updateSchool, addScoo };
-
+module.exports = {
+  addSchool,
+  listSchools,
+  updateSchool,
+};
