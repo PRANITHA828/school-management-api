@@ -7,8 +7,7 @@ const db = mysql.createConnection({
   database: process.env.MYSQLDATABASE,
   port: process.env.MYSQLPORT,
   waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0,
+  connectionLimit: 10
 });
 
 

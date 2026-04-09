@@ -110,5 +110,11 @@ const updateSchool = (req, res) => {
   );
 };
 
-module.exports = { addSchool, listSchools, updateSchool };
+const addScoo = (req, res) => {
+  return res.json({
+    message: "API working ✅",
+  });
+};
+
+module.exports = { addSchool, listSchools, updateSchool, addScoo };
 
