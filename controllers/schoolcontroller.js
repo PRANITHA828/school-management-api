@@ -81,52 +81,9 @@ const listSchools = (req, res) => {
 };
 
 
-// UPDATE SCHOOL
-const updateSchool = (req, res) => {
-  const { id } = req.params;
-  const { name, address, latitude, longitude } = req.body;
-
-  if (!id) {
-    return res.status(400).json({ message: "ID is required" });
-  }
-
-  if (!name || !address || latitude == null || longitude == null) {
-    return res.status(400).json({ message: "All fields are required" });
-  }
-
-  if (isNaN(latitude) || isNaN(longitude)) {
-    return res.status(400).json({ message: "Invalid coordinates" });
-  }
-
-  const query = `
-    UPDATE schools 
-    SET name=?, address=?, latitude=?, longitude=? 
-    WHERE id=?
-  `;
-
-  db.run(
-    query,
-    [name, address, latitude, longitude, id],
-    function (err) {
-      if (err) {
-        console.error("DB ERROR:", err);
-        return res.status(500).json({ error: err.message });
-      }
-
-      if (this.changes === 0) {
-        return res.status(404).json({ message: "School not found" });
-      }
-
-      return res.json({
-        message: "School updated successfully",
-      });
-    }
-  );
-};
 
 
 module.exports = {
   addSchool,
   listSchools,
-  updateSchool,
 };
